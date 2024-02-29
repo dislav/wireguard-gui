@@ -8,7 +8,9 @@ export class AppService {
   constructor(@InjectConnect() private readonly connect: NodeSSH) {}
 
   async getHello(): Promise<string> {
-    const result = await this.connect.exec('cat wg0.conf', [], { cwd: '/etc/wireguard' });
+    const result = await this.connect.exec('cat wg0.conf', [], {
+      cwd: '/etc/wireguard',
+    });
     console.log(result);
 
     return 'Hello World!';

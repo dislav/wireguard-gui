@@ -10,7 +10,8 @@
   "scripts": {
     "dev:client": "yarn workspace @wireguard-vpn/client dev",
     "dev:server": "yarn workspace @wireguard-vpn/server start:dev",
-    "build:packages": "yarn workspace @wireguard-vpn/common build"
+    "build:packages": "yarn workspace @wireguard-vpn/common build",
+    "prepare": "husky"
   },
   "dependencies": {},
   "devDependencies": {
