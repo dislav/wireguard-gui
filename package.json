@@ -1,0 +1,19 @@
+{
+  "name": "wireguard-vpn",
+  "version": "0.0.1",
+  "author": "Vladislav Grigoriev",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:client": "yarn workspace @wireguard-vpn/client dev",
+    "dev:server": "yarn workspace @wireguard-vpn/server start:dev",
+    "build:packages": "yarn workspace @wireguard-vpn/common build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "lerna": "^8.1.2"
+  }
+}
