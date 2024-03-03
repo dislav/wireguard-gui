@@ -3,5 +3,6 @@
     "outDir": "./dist",
     "baseUrl": "./"
   },
+  "include": ["src", "types.d.ts"],
   "extends": ["../../tsconfig.server.json"]
 }
