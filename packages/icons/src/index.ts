@@ -1,0 +1,1 @@
+export { WireguardLogo } from './WireguardLogo';

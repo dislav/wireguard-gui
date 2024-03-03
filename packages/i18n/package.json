@@ -1,0 +1,13 @@
+{
+  "name": "@wireguard-vpn/i18n",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "i18next": "^23.10.0",
+    "react-i18next": "^14.0.5"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}

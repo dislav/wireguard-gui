@@ -8,8 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:client": "yarn workspace @wireguard-vpn/client dev",
-    "dev:server": "yarn workspace @wireguard-vpn/server start:dev",
+    "client:dev": "yarn workspace @wireguard-vpn/client dev",
+    "server:dev": "yarn workspace @wireguard-vpn/server start:dev",
     "build:packages": "yarn workspace @wireguard-vpn/common build",
     "prepare": "husky"
   },

@@ -22,7 +22,7 @@ export class AppController {
 
   @IsPublic()
   @Post('/session')
-  login(@Req() request: Request, @Body() loginDto: LoginDto): void {
-    this.appService.login(request, loginDto);
+  login(@Req() request: Request, @Body() loginDto: LoginDto): boolean {
+    return this.appService.login(request, loginDto);
   }
 }

@@ -12,7 +12,7 @@ export class AppService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  login(request: Request, loginDto: LoginDto): void {
+  login(request: Request, loginDto: LoginDto): boolean {
     if (loginDto.username !== this.WG_USERNAME) {
       throw new UnauthorizedException();
     }
@@ -28,5 +28,7 @@ export class AppService {
 
     request.session.user = loginDto;
     request.session.save();
+
+    return true;
   }
 }
