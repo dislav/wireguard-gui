@@ -7,6 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { NodeSSH, SSHExecOptions } from 'node-ssh';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import * as qrcode from 'qrcode';
 
 import { InjectConnect } from '@wireguard-vpn/common';
@@ -16,10 +18,16 @@ import { Client } from './entities/client.entity';
 import { Dump } from './entities/dump.entity';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import * as process from 'process';
 
 @Injectable()
 export class WireguardService {
   private readonly logger = new Logger(WireguardService.name);
+
+  private readonly WG_CONFIG_PATH = path.resolve(
+    process.cwd(),
+    '../../wg-config.json',
+  );
 
   private readonly WG_HOST = this.configService.get<string>('WG_HOST');
   private readonly WG_PORT = this.configService.get<string>('WG_PORT');
@@ -44,17 +52,19 @@ export class WireguardService {
 
   async getConfig(): Promise<Config> {
     try {
-      const wg0Json = await this.exec('cat wg0.json');
+      const wgConfig = await fs.readFile(this.WG_CONFIG_PATH, 'utf-8');
 
-      return JSON.parse(wg0Json);
+      return JSON.parse(wgConfig);
     } catch {
       return this.createConfig();
     }
   }
 
   async getClients(): Promise<Client[]> {
-    const config = await this.getConfig();
-    const dumps = await this.getDump();
+    const configPromise = this.getConfig();
+    const dumpPromise = this.getDump();
+
+    const [config, dumps] = await Promise.all([configPromise, dumpPromise]);
 
     return Object.values(config.clients).map((client) => {
       const clientDump = dumps.find(
@@ -284,16 +294,20 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
 
           if (publicKey && preSharedKey && allowedIps) {
             const id = uuidv4();
+            const isEnabled = !clientConfig.includes('disabled');
+            const name =
+              clientConfig.match(/(?<=### end ).*(?= ###)/)[0] ||
+              `client${index + 1}`;
 
             const client = new Client();
             client.id = id;
             client.telegramId = null;
-            client.name = `client${index + 1}`;
+            client.name = name;
             client.privateKey = privateKey;
             client.publicKey = publicKey;
             client.preSharedKey = preSharedKey;
             client.address = allowedIps.split('/')[0];
-            client.enabled = true;
+            client.enabled = isEnabled;
             client.expiryDate = null;
             client.createdAt = new Date();
             client.updatedAt = new Date();
@@ -347,13 +361,22 @@ AllowedIPs = ${client.address}/32`;
       }
     });
 
-    await this.exec(`echo '${JSON.stringify(config, null, 2)}' > wg0.json`);
-    await this.exec(`echo '${result}' > wg0.test.conf`);
+    const saveLocalWgConfigPromise = fs.writeFile(
+      this.WG_CONFIG_PATH,
+      JSON.stringify(config, null, 2),
+      'utf-8',
+    );
+
+    const saveServerWgConfigPromise = this.exec(
+      `echo '${result}' > wg0.test.conf`,
+    );
+
+    await Promise.all([saveLocalWgConfigPromise, saveServerWgConfigPromise]);
 
     this.logger.log('Config saved successfully');
   }
 
-  private async reloadWireguard(): Promise<void> {
+  private async reload(): Promise<void> {
     try {
       await this.exec('wg-quick down wg0');
       await this.exec('wg-quick up wg0');

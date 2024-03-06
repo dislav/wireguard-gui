@@ -7,7 +7,11 @@ import {
   Post,
   Put,
   Header,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { Readable } from 'stream';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { WireguardService } from './wireguard.service';
@@ -40,9 +44,21 @@ export class WireguardController {
   }
 
   @Get('/clients/:id/config')
-  @ApiOkResponse({ type: String })
-  clientConfig(@Param('id') id: string): Promise<string> {
-    return this.wireguardService.getClientConfig(id);
+  async clientConfig(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const client = await this.wireguardService.getClient(id);
+    const clientConfig = await this.wireguardService.getClientConfig(id);
+
+    response.set({
+      'Content-Type': 'text/plain',
+      'Content-Disposition': `attachment; filename="${client.name}.conf"`,
+    });
+
+    const stream = Readable.from(clientConfig, { encoding: 'utf-8' });
+
+    return new StreamableFile(stream);
   }
 
   @Get('/clients/:id/qrcode')
