@@ -7,7 +7,14 @@ export default {
         '../../node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}',
     ],
     theme: {
-        extend: {},
+        fontFamily: {
+            sans: ['Manrope', 'Roboto', 'sans-serif']
+        },
+        extend: {
+            animation: {
+                'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
+            },
+        },
     },
     darkMode: 'class',
     plugins: [nextui()],

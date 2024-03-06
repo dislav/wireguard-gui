@@ -1,6 +1,8 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+import { RootState } from '@/app/store';
 import { ClientState } from './types';
-import { clientApi } from '@/entities/client/api/clientApi.ts';
+import { clientApi } from '../api/clientApi';
 
 const initialState: ClientState = {
     clients: [],
@@ -13,6 +15,18 @@ export const clientSlice = createSlice({
         clearClients: (state) => {
             state.clients = [];
         },
+        toggleClient: (state, { payload }: PayloadAction<string>) => {
+            state.clients = state.clients.map((client) => {
+                if (client.id === payload) {
+                    return {
+                        ...client,
+                        enabled: !client.enabled,
+                    };
+                }
+
+                return client;
+            });
+        },
     },
     extraReducers: (builder) => {
         builder.addMatcher(
@@ -24,4 +38,6 @@ export const clientSlice = createSlice({
     },
 });
 
-export const { clearClients } = clientSlice.actions;
+export const selectClients = (state: RootState) => state.client.clients;
+
+export const { clearClients, toggleClient } = clientSlice.actions;

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, cn } from '@nextui-org/react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,14 +8,13 @@ import { useAppDispatch } from '@/shared/model';
 import { loginThunk } from '@/features/auth/login';
 import { loginFormSchema, LoginFormSchema } from '../model/loginFormSchema';
 import { Input } from '@/shared/ui';
-import { useState } from 'react';
 
 interface LoginFormProps {
     className?: string;
 }
 
 export default function LoginForm({ className }: LoginFormProps) {
-    const { t } = useTranslation('LoginForm');
+    const { t } = useTranslation('Auth');
 
     const dispatch = useAppDispatch();
 

@@ -10,13 +10,11 @@ export default function Layout({ header }: LayoutProps) {
 
     return (
         <NextUIProvider navigate={navigate}>
-            <div className="flex justify-center">
-                <div className="w-full max-w-3xl flex flex-col gap-8 py-8 px-6">
-                    {header}
-                    <div className="flex flex-col">
-                        <Outlet />
-                    </div>
-                </div>
+            {header}
+            <div className="flex justify-center py-8">
+                <main className="w-full max-w-3xl flex flex-col gap-6 px-4">
+                    <Outlet />
+                </main>
             </div>
         </NextUIProvider>
     );

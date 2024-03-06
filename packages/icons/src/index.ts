@@ -1,1 +1,11 @@
 export { WireguardLogo } from './WireguardLogo';
+export { MenuDots } from './MenuDots';
+export { QRCode } from './QRCode';
+export { Download } from './Download';
+export { Trash } from './Trash';
+export { ClockCircle } from './ClockCircle';
+export { RoundArrowUp } from './RoundArrowUp';
+export { RoundArrowDown } from './RoundArrowDown';
+export { Sun } from './Sun';
+export { Moon } from './Moon';
+export { AddCircle } from './AddCircle';

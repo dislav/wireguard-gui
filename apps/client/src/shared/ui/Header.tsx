@@ -1,31 +1,27 @@
-import { Avatar, cn } from '@nextui-org/react';
+import { Badge } from '@nextui-org/react';
 
 import { WireguardLogo } from '@wireguard-vpn/icons';
-import { useSessionQuery } from '@/entities/session';
+import { ChangeTheme } from '@/features/theme';
+import packageJson from '../../../package.json';
 
-interface HeaderProps {
-    className?: string;
-}
-
-export default function Header({ className }: HeaderProps) {
-    const { data } = useSessionQuery();
-
+export default function Header() {
     return (
-        <div className={cn(className, 'flex items-center justify-between')}>
-            <div className="flex items-center gap-4">
-                <div className="text-red-500 size-16 bg-default-100 rounded-full p-3 [&>svg]:size-full">
-                    {WireguardLogo}
-                </div>
-                <span className="text-xl font-bold">Wireguard</span>
-            </div>
-            {data?.username && (
+        <header className="sticky top-0 flex justify-center bg-background/50 backdrop-blur-xl py-4 z-20">
+            <div className="w-full max-w-3xl flex items-center justify-between px-4">
                 <div className="flex items-center gap-2">
-                    <Avatar
-                        name={`${data.username[0]}${data.username[1]}`.toUpperCase()}
-                    />
-                    {data.username}
+                    <div className="text-red-500 size-12 bg-content2 rounded-full p-2 [&>svg]:size-full">
+                        {WireguardLogo}
+                    </div>
+                    <Badge
+                        size="sm"
+                        content={`v${packageJson.version}`}
+                        classNames={{ badge: 'font-semibold' }}
+                    >
+                        <span className="text-xl font-bold">Wireguard</span>
+                    </Badge>
                 </div>
-            )}
-        </div>
+                <ChangeTheme />
+            </div>
+        </header>
     );
 }

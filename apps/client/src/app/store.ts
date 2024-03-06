@@ -1,7 +1,8 @@
-import { configureStore, Middleware } from '@reduxjs/toolkit';
+import { configureStore, lruMemoize, Middleware } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 
 // Reducers
+import { themeSlice } from '@/entities/theme';
 import { sessionSlice } from '@/entities/session';
 import { clientSlice } from '@/entities/client';
 
@@ -15,10 +16,25 @@ export function makeStore() {
     let preloadedState = {};
 
     try {
-        const state = localStorage.getItem('state');
+        const authorized = localStorage.getItem('authorized');
+        const theme = localStorage.getItem('theme');
 
-        if (state) {
-            preloadedState = JSON.parse(state);
+        if (authorized !== null) {
+            preloadedState = {
+                ...preloadedState,
+                [sessionSlice.name]: {
+                    isLoggedIn: JSON.parse(authorized),
+                },
+            };
+        }
+
+        if (theme !== null) {
+            preloadedState = {
+                ...preloadedState,
+                [themeSlice.name]: {
+                    theme: theme ?? 'light',
+                },
+            };
         }
     } catch (e) {
         console.log(e);
@@ -26,6 +42,7 @@ export function makeStore() {
 
     const store = configureStore({
         reducer: {
+            [themeSlice.name]: themeSlice.reducer,
             [sessionSlice.name]: sessionSlice.reducer,
             [clientSlice.name]: clientSlice.reducer,
             [baseApi.reducerPath]: baseApi.reducer,
@@ -44,15 +61,15 @@ export function makeStore() {
 
 export const store = makeStore();
 
+const saveState = lruMemoize((isLoggedIn: string, theme: string) => {
+    localStorage.setItem('authorized', isLoggedIn);
+    localStorage.setItem('theme', theme);
+});
+
 store.subscribe(() => {
     const state = store.getState();
 
-    localStorage.setItem(
-        'state',
-        JSON.stringify({
-            [sessionSlice.name]: state.session,
-        })
-    );
+    saveState(JSON.stringify(state.session.isLoggedIn), state.theme.theme);
 });
 
 export type RootState = ReturnType<typeof store.getState>;

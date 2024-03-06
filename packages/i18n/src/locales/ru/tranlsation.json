@@ -1,3 +1,10 @@
 {
-  "Required field": "Обязательное поле"
+  "Required field": "Обязательное поле",
+  "unitValue": "{{value}} {{unit}}",
+  "Bytes": "Байт",
+  "Bytes_0": "Байт",
+  "Kb": "Кб",
+  "Mb": "Мб",
+  "Gb": "Гб",
+  "Tb": "Тб"
 }

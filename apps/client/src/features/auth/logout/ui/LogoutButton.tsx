@@ -9,7 +9,7 @@ interface LogoutButtonProps {
 }
 
 export default function LogoutButton({ className }: LogoutButtonProps) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('Auth');
 
     const dispatch = useAppDispatch();
 

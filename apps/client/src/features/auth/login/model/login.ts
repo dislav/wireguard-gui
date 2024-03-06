@@ -13,7 +13,11 @@ export const loginThunk = createAsyncThunk(
                 if (typeof err.data === 'string') {
                     throw new Error(err.data);
                 } else if (isMessageError(err.data)) {
-                    throw new Error(err.data.message);
+                    throw new Error(
+                        typeof err.data.message === 'string'
+                            ? err.data.message
+                            : err.data.message[0]
+                    );
                 }
             }
 
