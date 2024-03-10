@@ -8,8 +8,8 @@ import {
     addClientFormSchema,
     AddClientFormSchema,
 } from '../model/addClientFormSchema';
-import { addClientThunk } from '../model/addClient';
 import { useAppDispatch } from '@/shared/model';
+import { addClientThunk } from '../model/addClient';
 import { Input } from '@/shared/ui';
 
 interface AddClientFormProps {

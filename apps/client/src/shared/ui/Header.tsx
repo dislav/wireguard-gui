@@ -1,8 +1,10 @@
 import { Badge } from '@nextui-org/react';
 
-import { WireguardLogo } from '@wireguard-vpn/icons';
-import { ChangeTheme } from '@/features/theme';
 import packageJson from '../../../package.json';
+
+import { WireguardLogo } from '@wireguard-vpn/icons';
+import { ChangeTheme } from '@/features/theme/changeTheme';
+import { LogoutButton } from '@/features/auth/logout';
 
 export default function Header() {
     return (
@@ -20,7 +22,10 @@ export default function Header() {
                         <span className="text-xl font-bold">Wireguard</span>
                     </Badge>
                 </div>
-                <ChangeTheme />
+                <div className="flex items-center gap-2">
+                    <ChangeTheme />
+                    <LogoutButton />
+                </div>
             </div>
         </header>
     );

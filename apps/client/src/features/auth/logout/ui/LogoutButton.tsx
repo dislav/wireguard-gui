@@ -1,16 +1,10 @@
-import { Button, cn } from '@nextui-org/react';
-import { useTranslation } from 'react-i18next';
+import { Button } from '@nextui-org/react';
 
 import { useAppDispatch } from '@/shared/model';
 import { logoutThunk } from '../model/logout';
+import { Logout } from '@wireguard-vpn/icons';
 
-interface LogoutButtonProps {
-    className?: string;
-}
-
-export default function LogoutButton({ className }: LogoutButtonProps) {
-    const { t } = useTranslation('Auth');
-
+export default function LogoutButton() {
     const dispatch = useAppDispatch();
 
     const onLogout = async () => {
@@ -18,8 +12,8 @@ export default function LogoutButton({ className }: LogoutButtonProps) {
     };
 
     return (
-        <Button className={cn(className)} onClick={onLogout}>
-            {t('Logout')}
+        <Button color="danger" onClick={onLogout} isIconOnly>
+            <div className="size-6">{Logout}</div>
         </Button>
     );
 }

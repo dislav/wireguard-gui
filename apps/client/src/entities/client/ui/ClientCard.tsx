@@ -1,83 +1,21 @@
-import {
-    Card,
-    CardBody,
-    Switch,
-    Button,
-    Dropdown,
-    DropdownTrigger,
-    DropdownMenu,
-    DropdownItem,
-    Avatar,
-} from '@nextui-org/react';
-import { useTranslation } from 'react-i18next';
+import { Card, CardBody, Avatar } from '@nextui-org/react';
 import dayjs from 'dayjs';
 
 import { Client } from '../model/types';
 import { getAdditionalInfo } from '../lib/getAdditionalInfo';
-import { useAppDispatch } from '@/shared/model';
-import {
-    deleteClientThunk,
-    disableClientThunk,
-    enableClientThunk,
-} from '@/features/client';
-import { MenuDots, QRCode, Download, Trash } from '@wireguard-vpn/icons';
+import { ClientMenu } from '@/features/client/menuClient';
+import { ToggleClientSwitch } from '@/features/client/toggleClient';
 
 interface ClientCardProps {
     client: Client;
 }
 
 export default function ClientCard({ client }: ClientCardProps) {
-    const { t } = useTranslation('Client');
-
-    const dispatch = useAppDispatch();
-
     const isOnline =
         !!client.latestHandshakeAt &&
         dayjs().diff(client.latestHandshakeAt, 'minute') < 5;
 
     const additionalInfo = getAdditionalInfo(client);
-
-    const menu = [
-        {
-            key: 'qrcode',
-            icon: QRCode,
-            label: t('QR code'),
-        },
-        {
-            key: 'download',
-            icon: Download,
-            label: t('Download'),
-            showDivider: true,
-        },
-        {
-            key: 'delete',
-            icon: Trash,
-            label: t('Delete'),
-            color: 'danger',
-        },
-    ];
-
-    const onClickMenu = async (key: string | number) => {
-        if (key === 'qrcode') {
-            // TODO: open modal with qrcode
-            console.log(key);
-        } else if (key === 'download') {
-            window.open(
-                `http://localhost:3000/wireguard/clients/${client.id}/config`,
-                '_blank'
-            );
-        } else if (key === 'delete') {
-            await dispatch(deleteClientThunk(client.id)).unwrap();
-        }
-    };
-
-    const onToggleClient = async (enable: boolean) => {
-        if (enable) {
-            await dispatch(enableClientThunk(client.id)).unwrap();
-        } else {
-            await dispatch(disableClientThunk(client.id)).unwrap();
-        }
-    };
 
     return (
         <Card>
@@ -122,43 +60,8 @@ export default function ClientCard({ client }: ClientCardProps) {
                         )}
                     </div>
                     <div className="flex flex-col justify-between gap-2">
-                        <Dropdown>
-                            <DropdownTrigger>
-                                <Button variant="bordered" isIconOnly>
-                                    <div className="size-6">{MenuDots}</div>
-                                </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu
-                                aria-label="Dropdown menu"
-                                onAction={onClickMenu}
-                            >
-                                {menu.map((item) => (
-                                    <DropdownItem
-                                        key={item.key}
-                                        color={
-                                            item.key === 'delete'
-                                                ? 'danger'
-                                                : 'default'
-                                        }
-                                        startContent={
-                                            <div className="size-4">
-                                                {item.icon}
-                                            </div>
-                                        }
-                                        showDivider={item.showDivider}
-                                    >
-                                        {item.label}
-                                    </DropdownItem>
-                                ))}
-                            </DropdownMenu>
-                        </Dropdown>
-                        <Switch
-                            size="sm"
-                            color="primary"
-                            classNames={{ wrapper: 'mr-0' }}
-                            onValueChange={onToggleClient}
-                            isSelected={client.enabled}
-                        />
+                        <ClientMenu client={client} />
+                        <ToggleClientSwitch client={client} />
                     </div>
                 </div>
             </CardBody>

@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
 import { ClientCard, selectClients, useClientsQuery } from '@/entities/client';
-import { AddClientButton } from '@/features/client';
+import { AddClientButton } from '@/features/client/addClient';
 import { HomePageSkeleton } from './HomePage.skeleton';
 
 export default function HomePage() {

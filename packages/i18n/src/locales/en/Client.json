@@ -5,5 +5,9 @@
   "Delete": "Delete",
   "Name": "Name",
   "Save": "Save",
-  "New client": "New client"
+  "New client": "New client",
+  "Confirmation of deletion": "Confirmation of deletion",
+  "Are you sure you want to delete the client?": "Are you sure you want to delete the client?",
+  "Cancel": "Cancel",
+  "Confirm": "Confirm"
 }

@@ -9,3 +9,4 @@ export { RoundArrowDown } from './RoundArrowDown';
 export { Sun } from './Sun';
 export { Moon } from './Moon';
 export { AddCircle } from './AddCircle';
+export { Logout } from './Logout';

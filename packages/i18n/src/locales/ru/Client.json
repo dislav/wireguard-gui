@@ -5,5 +5,9 @@
   "Delete": "Удалить",
   "Name": "Имя",
   "Save": "Сохранить",
-  "New client": "Новый клиент"
+  "New client": "Новый клиент",
+  "Confirmation of deletion": "Подтверждение удаления",
+  "Are you sure you want to delete the client?": "Вы уверены, что хотите удалить клиента?",
+  "Cancel": "Отменить",
+  "Confirm": "Подтвердить"
 }

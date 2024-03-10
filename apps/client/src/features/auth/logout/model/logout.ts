@@ -1,5 +1,4 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-
 import { clearSession, sessionApi } from '@/entities/session';
 
 export const logoutThunk = createAsyncThunk(

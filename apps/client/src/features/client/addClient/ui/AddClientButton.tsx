@@ -8,7 +8,7 @@ import {
 } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 
-import { AddClientForm } from '../ui';
+import AddClientForm from './AddClientForm';
 import { AddCircle } from '@wireguard-vpn/icons';
 
 export default function AddClientButton() {
