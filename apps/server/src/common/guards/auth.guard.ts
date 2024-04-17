@@ -13,6 +13,9 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private readonly password =
+    this.configService.get<string>('DASHBOARD_PASSWORD');
+
   constructor(
     private readonly reflector: Reflector,
     private readonly configService: ConfigService,
@@ -35,11 +38,9 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const password = this.configService.get<string>('WG_PASSWORD');
-
     const isMatch = bcrypt.compareSync(
       session.user.password,
-      bcrypt.hashSync(password, 10),
+      bcrypt.hashSync(this.password, 10),
     );
 
     if (!isMatch) {

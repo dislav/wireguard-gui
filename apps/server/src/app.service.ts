@@ -1,32 +1,61 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
 
 import { LoginDto } from './common/dto/login.dto';
+import { ServersService } from './modules';
 
 @Injectable()
 export class AppService {
-  private readonly WG_USERNAME = this.configService.get<string>('WG_USERNAME');
-  private readonly WG_PASSWORD = this.configService.get<string>('WG_PASSWORD');
+  private readonly username =
+    this.configService.get<string>('DASHBOARD_USERNAME');
 
-  constructor(private readonly configService: ConfigService) {}
+  private readonly password =
+    this.configService.get<string>('DASHBOARD_PASSWORD');
 
-  login(request: Request, loginDto: LoginDto): boolean {
-    if (loginDto.username !== this.WG_USERNAME) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly serversService: ServersService,
+  ) {}
+
+  async login(request: Request, loginDto: LoginDto): Promise<boolean> {
+    if (loginDto.username !== this.username) {
       throw new UnauthorizedException();
     }
 
     const isMatch = bcrypt.compareSync(
       loginDto.password,
-      bcrypt.hashSync(this.WG_PASSWORD, 10),
+      bcrypt.hashSync(this.password, 10),
     );
 
     if (!isMatch) {
       throw new UnauthorizedException();
     }
 
-    request.session.user = loginDto;
+    request.session.user = {
+      username: loginDto.username,
+      password: loginDto.password,
+      server: this.serversService.serverName,
+    };
+
+    request.session.save();
+
+    return true;
+  }
+
+  async changeServer(request: Request, name: string): Promise<boolean> {
+    const serverName = name.toUpperCase();
+
+    if (!this.serversService.servers.includes(serverName)) {
+      throw new BadRequestException();
+    }
+
+    request.session.user.server = serverName;
     request.session.save();
 
     return true;

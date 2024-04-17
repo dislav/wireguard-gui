@@ -4,55 +4,45 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { NodeSSH, SSHExecOptions } from 'node-ssh';
+// import { Cron, CronExpression } from '@nestjs/schedule';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as qrcode from 'qrcode';
+import * as dayjs from 'dayjs';
 
-import { InjectConnect } from '@wireguard-vpn/common';
+import { ServersService } from '../servers';
 import { Config } from './entities/config.entity';
 import { Server } from './entities/server.entity';
 import { Client } from './entities/client.entity';
 import { Dump } from './entities/dump.entity';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import * as process from 'process';
 
 @Injectable()
 export class WireguardService {
   private readonly logger = new Logger(WireguardService.name);
+  private readonly databasePath = path.resolve(process.cwd(), '../../_db');
 
-  private readonly WG_CONFIG_PATH = path.resolve(
-    process.cwd(),
-    '../../wg-config.json',
-  );
+  constructor(private readonly serversService: ServersService) {}
 
-  private readonly WG_HOST = this.configService.get<string>('WG_HOST');
-  private readonly WG_PORT = this.configService.get<string>('WG_PORT');
-  private readonly WG_CWD = this.configService.get<string>(
-    'WG_CWD',
-    '/etc/wireguard',
-  );
-  private readonly WG_DNS = this.configService.get<string>('WG_DNS');
-  private readonly WG_MTU = this.configService.get<string>('WG_MTU');
-  private readonly WG_ADDRESS = this.configService.get<string>('WG_ADDRESS');
-  private readonly WG_ALLOWED_IPS =
-    this.configService.get<string>('WG_ALLOWED_IPS');
-  private readonly WG_PERSISTENT_KEEPALIVE = this.configService.get<string>(
-    'WG_PERSISTENT_KEEPALIVE',
-    '0',
-  );
+  private get configPath(): string {
+    const configName = `config-${this.serversService.serverName.toLowerCase()}.json`;
 
-  constructor(
-    @InjectConnect() private readonly connect: NodeSSH,
-    private readonly configService: ConfigService,
-  ) {}
+    return path.join(this.databasePath, configName);
+  }
 
-  async getConfig(): Promise<Config> {
+  private get ratesPath(): string {
+    const rateName = `rates-${this.serversService.serverName.toLowerCase()}.json`;
+
+    return path.join(this.databasePath, rateName);
+  }
+
+  async getConfig(serverName: string): Promise<Config> {
+    this.serversService.serverName = serverName;
+
     try {
-      const wgConfig = await fs.readFile(this.WG_CONFIG_PATH, 'utf-8');
+      const wgConfig = await fs.readFile(this.configPath, 'utf-8');
 
       return JSON.parse(wgConfig);
     } catch {
@@ -60,8 +50,8 @@ export class WireguardService {
     }
   }
 
-  async getClients(): Promise<Client[]> {
-    const configPromise = this.getConfig();
+  async getClients(serverName: string): Promise<Client[]> {
+    const configPromise = this.getConfig(serverName);
     const dumpPromise = this.getDump();
 
     const [config, dumps] = await Promise.all([configPromise, dumpPromise]);
@@ -81,8 +71,8 @@ export class WireguardService {
     });
   }
 
-  async getClient(id: string): Promise<Client> {
-    const config = await this.getConfig();
+  async getClient(id: string, serverName: string): Promise<Client> {
+    const config = await this.getConfig(serverName);
     const client = config.clients[id];
 
     if (!client) {
@@ -93,7 +83,7 @@ export class WireguardService {
   }
 
   async getDump(): Promise<Dump[]> {
-    const dump = await this.exec('wg show wg0 dump');
+    const dump = await this.serversService.exec('wg show wg0 dump');
 
     return dump
       .trim()
@@ -128,8 +118,8 @@ export class WireguardService {
       });
   }
 
-  async getClientConfig(id: string): Promise<string> {
-    const config = await this.getConfig();
+  async getClientConfig(id: string, serverName: string): Promise<string> {
+    const config = await this.getConfig(serverName);
     const client = config.clients[id];
 
     if (!client) {
@@ -139,34 +129,40 @@ export class WireguardService {
     return `[Interface]
 PrivateKey = ${client.privateKey}
 Address = ${client.address}/24
-${this.WG_DNS ? `DNS = ${this.WG_DNS}\n` : ''}\
-${this.WG_MTU ? `MTU = ${this.WG_MTU}\n` : ''}\
+${this.serversService.wireguardConfig.dns ? `DNS = ${this.serversService.wireguardConfig.dns}\n` : ''}\
+${this.serversService.wireguardConfig.mtu ? `MTU = ${this.serversService.wireguardConfig.mtu}\n` : ''}\
 
 [Peer]
 PublicKey = ${config.server.publicKey}
 PresharedKey = ${client.preSharedKey}
-AllowedIPs = ${this.WG_ALLOWED_IPS}
-PersistentKeepalive = ${this.WG_PERSISTENT_KEEPALIVE}
-Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
+AllowedIPs = ${this.serversService.wireguardConfig.allowedIps}
+PersistentKeepalive = ${this.serversService.wireguardConfig.persistentKeepalive}
+Endpoint = ${this.serversService.wireguardConfig.host}:${this.serversService.wireguardConfig.port}`;
   }
 
-  async getClientQRCode(id: string): Promise<string> {
-    const clientConfig = await this.getClientConfig(id);
+  async getClientQRCode(id: string, serverName: string): Promise<string> {
+    const clientConfig = await this.getClientConfig(id, serverName);
 
     return qrcode.toString(clientConfig, { type: 'svg', width: 512 });
   }
 
-  async createClient(createClientDto: CreateClientDto): Promise<Client> {
-    const config = await this.getConfig();
+  async createClient(
+    createClientDto: CreateClientDto,
+    serverName: string,
+  ): Promise<Client> {
+    const config = await this.getConfig(serverName);
     const clientsLength = Object.keys(config.clients ?? {}).length + 1;
 
-    const privateKey = await this.exec('wg genkey');
-    const publicKey = await this.exec(`echo ${privateKey} | wg pubkey`);
-    const preSharedKey = await this.exec('wg genpsk');
+    const privateKey = await this.serversService.wgPrivateKey();
+    const publicKey = await this.serversService.wgPublicKey(privateKey);
+    const preSharedKey = await this.serversService.wgPreSharedKey();
 
     let address: string;
     if (clientsLength < 255) {
-      address = this.WG_ADDRESS.replace('x', `${clientsLength + 1}`);
+      address = this.serversService.wireguardConfig.address.replace(
+        'x',
+        `${clientsLength + 1}`,
+      );
     } else {
       throw new BadRequestException('Maximum number of clients reached');
     }
@@ -198,15 +194,21 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
   async updateClient(
     id: string,
     updateClientDto: UpdateClientDto,
+    serverName: string,
   ): Promise<Client> {
-    const config = await this.getConfig();
+    const config = await this.getConfig(serverName);
     const client = config.clients[id];
 
     if (!client) {
       throw new NotFoundException('Client not found');
     }
 
-    client.name = updateClientDto.name;
+    client.name = updateClientDto.name ?? client.name;
+    client.telegramId = updateClientDto.telegramId ?? client.telegramId;
+    client.expiryDate = updateClientDto.expiryDate
+      ? new Date(updateClientDto.expiryDate)
+      : client.expiryDate;
+
     client.updatedAt = new Date();
 
     await this.saveConfig(config);
@@ -214,8 +216,8 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
     return client;
   }
 
-  async enableClient(id: string): Promise<Client> {
-    const config = await this.getConfig();
+  async enableClient(id: string, serverName: string): Promise<Client> {
+    const config = await this.getConfig(serverName);
     const client = config.clients[id];
 
     if (!client) {
@@ -230,8 +232,8 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
     return client;
   }
 
-  async disableClient(id: string): Promise<Client> {
-    const config = await this.getConfig();
+  async disableClient(id: string, serverName: string): Promise<Client> {
+    const config = await this.getConfig(serverName);
     const client = config.clients[id];
 
     if (!client) {
@@ -246,8 +248,44 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
     return client;
   }
 
-  async removeClient(id: string): Promise<Client> {
-    const config = await this.getConfig();
+  async extendClient(
+    id: string,
+    rateId: string,
+    serverName: string,
+  ): Promise<Client> {
+    const config = await this.getConfig(serverName);
+    const client = config.clients[id];
+
+    if (!client) {
+      throw new NotFoundException('Client not found');
+    }
+
+    try {
+      const rates = JSON.parse(await fs.readFile(this.ratesPath, 'utf-8'));
+      const rateById = rates.find((rate) => rate.id === +rateId);
+
+      if (!rateById) {
+        throw new NotFoundException('Rate not found');
+      }
+
+      client.expiryDate = dayjs(client.expiryDate ?? new Date())
+        .add(rateById.months, 'month')
+        .endOf('day')
+        .subtract(1, 'minute')
+        .toDate();
+
+      client.updatedAt = new Date();
+
+      await this.saveConfig(config);
+
+      return client;
+    } catch (err) {
+      throw new BadRequestException(err);
+    }
+  }
+
+  async removeClient(id: string, serverName: string): Promise<Client> {
+    const config = await this.getConfig(serverName);
     const client = config.clients[id];
 
     if (!client) {
@@ -264,7 +302,7 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
     const config = new Config();
 
     try {
-      const wgConfig = await this.exec('cat wg0.conf');
+      const wgConfig = await this.serversService.exec('cat wg0.conf');
       const wgConfigPeers = wgConfig.split('[Peer]');
 
       const serverConfig = wgConfigPeers?.[0];
@@ -275,12 +313,12 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
 
       const server = new Server();
       const privateKey = serverConfig.match(/PrivateKey\s=\s(.*)/)[1];
-      const publicKey = await this.exec(`echo ${privateKey} | wg pubkey`);
+      const publicKey = await this.serversService.wgPublicKey(privateKey);
       const address = serverConfig.match(/Address\s=\s(.*)/)[1];
 
       server.privateKey = privateKey;
       server.publicKey = publicKey;
-      server.address = address;
+      server.address = address.split('/')[0];
 
       config.server = server;
 
@@ -320,9 +358,12 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
         });
       }
     } catch {
-      const privateKey = await this.exec('wg genkey');
-      const publicKey = await this.exec(`echo ${privateKey} | wg pubkey`);
-      const address = this.WG_ADDRESS.replace('x', '1');
+      const privateKey = await this.serversService.wgPrivateKey();
+      const publicKey = await this.serversService.wgPublicKey(privateKey);
+      const address = this.serversService.wireguardConfig.address.replace(
+        'x',
+        '1',
+      );
 
       const server = new Server();
       server.privateKey = privateKey;
@@ -346,8 +387,8 @@ Endpoint = ${this.WG_HOST}:${this.WG_PORT}`;
 [Interface]
 PrivateKey = ${config.server.privateKey}
 Address = ${config.server.address}/24
-MTU = ${this.WG_MTU}
-ListenPort = ${this.WG_PORT}`;
+MTU = ${this.serversService.wireguardConfig.mtu}
+ListenPort = ${this.serversService.wireguardConfig.port}`;
 
     Object.entries(config.clients ?? {}).forEach(([id, client]) => {
       if (client.enabled) {
@@ -362,38 +403,53 @@ AllowedIPs = ${client.address}/32`;
     });
 
     const saveLocalWgConfigPromise = fs.writeFile(
-      this.WG_CONFIG_PATH,
+      this.configPath,
       JSON.stringify(config, null, 2),
       'utf-8',
     );
 
-    const saveServerWgConfigPromise = this.exec(
-      `echo '${result}' > wg0.test.conf`,
-    );
+    const saveServerWgConfigPromise = this.serversService.saveWgConfig(result);
 
     await Promise.all([saveLocalWgConfigPromise, saveServerWgConfigPromise]);
 
     this.logger.log('Config saved successfully');
+
+    await this.reload();
   }
 
   private async reload(): Promise<void> {
-    try {
-      await this.exec('wg-quick down wg0');
-      await this.exec('wg-quick up wg0');
+    await this.serversService.exec('wg-quick down wg0').catch(() => {});
+    await this.serversService.exec('wg-quick up wg0').catch(() => {});
 
-      this.logger.log('Reload wireguard successfully');
-    } catch (err) {
-      this.logger.error('Reload wireguard error', err);
-    }
+    this.logger.log('Reload wireguard successfully');
   }
 
-  private exec(
-    command: string,
-    parameters: string[] = [],
-    options: SSHExecOptions & {
-      stream?: 'stdout' | 'stderr';
-    } = { cwd: this.WG_CWD },
-  ): Promise<string> {
-    return this.connect.exec(command, parameters, options);
-  }
+  // @Cron(CronExpression.EVERY_HOUR)
+  // async checkExpiryDate() {
+  //   const config = await this.getConfig();
+  //
+  //   let needSave = false;
+  //
+  //   Object.values(config?.clients ?? {}).forEach((client) => {
+  //     if (client.enabled && client.expiryDate) {
+  //       const diffMinutes = -dayjs().diff(client.expiryDate, 'minute');
+  //       const diffHours = Math.round(diffMinutes / 60);
+  //
+  //       if ([1, 12, 24, 36].includes(diffHours)) {
+  //         console.log('bot notification');
+  //       }
+  //
+  //       if (diffMinutes < 0) {
+  //         client.enabled = false;
+  //         client.updatedAt = new Date();
+  //
+  //         needSave = true;
+  //       }
+  //     }
+  //   });
+  //
+  //   if (needSave) {
+  //     await this.saveConfig(config);
+  //   }
+  // }
 }

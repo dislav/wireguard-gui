@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, Session } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  Session,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SessionData } from 'express-session';
 import { Request } from 'express';
@@ -22,7 +30,15 @@ export class AppController {
 
   @IsPublic()
   @Post('/session')
-  login(@Req() request: Request, @Body() loginDto: LoginDto): boolean {
+  login(@Req() request: Request, @Body() loginDto: LoginDto): Promise<boolean> {
     return this.appService.login(request, loginDto);
+  }
+
+  @Get('/change-server/:name')
+  changeServer(
+    @Req() request: Request,
+    @Param('name') name: string,
+  ): Promise<boolean> {
+    return this.appService.changeServer(request, name);
   }
 }

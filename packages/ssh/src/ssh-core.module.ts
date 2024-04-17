@@ -8,7 +8,8 @@ import {
 import { NodeSSH } from 'node-ssh';
 
 import { SshOptions, SshOptionsAsync, SshOptionsFactory } from './interfaces';
-import { SSH_OPTIONS, SSH_CONNECT } from './constants';
+import { SSH_OPTIONS, SSH_CONNECT_NAME } from './constants';
+import { getConnectName } from './utils';
 
 @Global()
 @Module({})
@@ -16,28 +17,41 @@ export class SshCoreModule {
   private static logger = new Logger(SshCoreModule.name, { timestamp: true });
 
   public static forRoot(options: SshOptions): DynamicModule {
+    const connectName = getConnectName(options.name);
+
     const sshConfigProvider: Provider = {
       provide: SSH_OPTIONS,
       useValue: options,
     };
 
+    const sshConnectNameProvider: Provider = {
+      provide: SSH_CONNECT_NAME,
+      useValue: connectName,
+    };
+
     const sshConnectProvider: Provider = {
-      provide: SSH_CONNECT,
+      provide: connectName,
       useFactory: () => this.createSshConnectFactory(options),
     };
 
     return {
       module: SshCoreModule,
-      providers: [sshConfigProvider, sshConnectProvider],
+      providers: [
+        sshConfigProvider,
+        sshConnectNameProvider,
+        sshConnectProvider,
+      ],
       exports: [sshConnectProvider],
     };
   }
 
   public static forRootAsync(options: SshOptionsAsync): DynamicModule {
+    const connectName = getConnectName(options.name);
+
     const asyncProviders = this.createAsyncProviders(options);
 
     const sshConnectProvider: Provider = {
-      provide: SSH_CONNECT,
+      provide: connectName,
       useFactory: (options) => this.createSshConnectFactory(options),
       inject: [SSH_OPTIONS],
     };

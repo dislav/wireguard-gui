@@ -10,10 +10,14 @@
   "scripts": {
     "client:dev": "yarn workspace @wireguard-vpn/client dev",
     "server:dev": "yarn workspace @wireguard-vpn/server start:dev",
-    "build:packages": "yarn workspace @wireguard-vpn/common build",
+    "build:packages": "yarn workspace @wireguard-vpn/ssh build",
     "prepare": "husky"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@nestjs/common": "^10.3.7",
+    "@nestjs/core": "^10.3.7",
+    "prettier": "^3.2.5"
+  },
   "devDependencies": {
     "lerna": "^8.1.2"
   }
