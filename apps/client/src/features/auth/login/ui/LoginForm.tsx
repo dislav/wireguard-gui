@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, cn } from '@nextui-org/react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 
@@ -21,8 +21,9 @@ export default function LoginForm({ className }: LoginFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const { register, handleSubmit, formState } = useForm<LoginFormSchema>({
+    const { handleSubmit, control } = useForm<LoginFormSchema>({
         resolver: zodResolver(loginFormSchema),
+        defaultValues: { username: '', password: '' },
     });
 
     const onSubmit: SubmitHandler<LoginFormSchema> = async (data) => {
@@ -58,19 +59,31 @@ export default function LoginForm({ className }: LoginFormProps) {
                 )}
 
                 <div className="flex flex-col gap-4">
-                    <Input
-                        {...register('username')}
-                        label={t('Username')}
-                        isInvalid={!!formState.errors.username}
-                        errorMessage={formState.errors.username?.message}
+                    <Controller
+                        name="username"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                            <Input
+                                {...field}
+                                label={t('Username')}
+                                isInvalid={!!fieldState.error}
+                                errorMessage={fieldState.error?.message}
+                            />
+                        )}
                     />
 
-                    <Input
-                        {...register('password')}
-                        type="password"
-                        label={t('Password')}
-                        isInvalid={!!formState.errors.password}
-                        errorMessage={formState.errors.password?.message}
+                    <Controller
+                        name="password"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                            <Input
+                                {...field}
+                                type="password"
+                                label={t('Password')}
+                                isInvalid={!!fieldState.error}
+                                errorMessage={fieldState.error?.message}
+                            />
+                        )}
                     />
                 </div>
 

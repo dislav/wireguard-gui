@@ -14,7 +14,7 @@ export default function ChangeTheme() {
     };
 
     return (
-        <Button onClick={onClick} isIconOnly>
+        <Button onPress={onClick} isIconOnly>
             <div className="size-6">
                 {currentTheme === 'light' ? Moon : Sun}
             </div>

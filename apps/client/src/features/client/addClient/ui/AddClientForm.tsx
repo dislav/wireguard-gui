@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@nextui-org/react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 
@@ -23,10 +23,10 @@ export default function AddClientForm({ onSuccess }: AddClientFormProps) {
 
     const [isLoading, setIsLoading] = useState(false);
 
-    const { register, handleSubmit, formState, setError } =
-        useForm<AddClientFormSchema>({
-            resolver: zodResolver(addClientFormSchema),
-        });
+    const { handleSubmit, control, setError } = useForm<AddClientFormSchema>({
+        resolver: zodResolver(addClientFormSchema),
+        defaultValues: { name: '' },
+    });
 
     const onSubmit: SubmitHandler<AddClientFormSchema> = async (data) => {
         setIsLoading(true);
@@ -46,11 +46,17 @@ export default function AddClientForm({ onSuccess }: AddClientFormProps) {
 
     return (
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-            <Input
-                {...register('name')}
-                label={t('Name')}
-                isInvalid={!!formState.errors.name}
-                errorMessage={formState.errors.name?.message}
+            <Controller
+                name="name"
+                control={control}
+                render={({ field, fieldState }) => (
+                    <Input
+                        {...field}
+                        label={t('Name')}
+                        isInvalid={!!fieldState.error}
+                        errorMessage={fieldState.error?.message}
+                    />
+                )}
             />
 
             <Button color="primary" type="submit" isLoading={isLoading}>

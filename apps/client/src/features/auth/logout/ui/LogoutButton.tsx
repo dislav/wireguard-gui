@@ -12,7 +12,7 @@ export default function LogoutButton() {
     };
 
     return (
-        <Button color="danger" onClick={onLogout} isIconOnly>
+        <Button color="danger" onPress={onLogout} isIconOnly>
             <div className="size-6">{Logout}</div>
         </Button>
     );
